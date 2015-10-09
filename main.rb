@@ -49,17 +49,17 @@ helpers do
     total
   end
 
+  def dealer_total
+    calculate_total(session[:dealer_cards])
+  end
+
+  def player_total
+    calculate_total(session[:player_cards])
+  end
+
   def deal_single_card(option)
     session[:dealer_cards] << session[:deck].shift if option == 'dealer'
     session[:player_cards] << session[:deck].shift if option == 'player'
-  end
-
-  def end_of_game?(name, total)
-    if total > BLACKJACK_VALUE
-      @flash = { 'type': 'danger', 'message': name +' busted!' }
-    elsif total == BLACKJACK_VALUE
-      @flash = { 'type': 'success', 'message': name +' hit Blackjack!'}
-    end
   end
 
   def card_image(card)
@@ -81,10 +81,38 @@ helpers do
     value = "#{suit}_#{value}"
     "<img src='/images/cards/#{value}.jpg' class='card_image'>"
   end
+
+  def end_of_game?(name, total)
+    if total > BLACKJACK_VALUE
+      looser!("#{name} lost with a total of #{total}!")
+      @show_hit_or_stay_controls = false
+      @play_again = true
+    elsif total == BLACKJACK_VALUE
+      winner!("#{name} hit Blackjack!")
+      @show_hit_or_stay_controls = false
+      @play_again = true
+    end
+  end
+
+  def winner!(msg)
+    @flash = { 'type': 'success', 'message': msg }
+    @play_again = true
+  end
+
+  def looser!(msg)
+    @flash = { 'type': 'danger', 'message': msg }
+    @play_again = true
+  end
+
+  def tie!(msg)
+    @flash = { 'type': 'success', 'message': msg }
+    @play_again = true
+  end
 end
 
 before do
   @flash = {}
+  @play_again = false
   @show_hit_or_stay_controls = true
 end
 
@@ -111,40 +139,36 @@ end
 
 get '/game' do
   redirect '/' if new_player?
+  session[:turn] = 'player'
   shuffle_deck
   deal_cards
-  session[:dealer_total] = calculate_total(session[:dealer_cards])
-  session[:player_total] = calculate_total(session[:player_cards])
+  end_of_game?(session[:player_name], player_total)
   erb :game
 end
 
-post '/player/hit' do
+post '/game/player/hit' do
   deal_single_card('player')
-  session[:player_total] = calculate_total(session[:player_cards])
-  if end_of_game?(session[:player_name], session[:player_total])
-    @show_hit_or_stay_controls = false
-  end
+  end_of_game?(session[:player_name], player_total)
   erb :game
 end
 
-post '/player/stay' do
+post '/game/player/stay' do
   @show_hit_or_stay_controls = false
   @flash = { 'type': 'success', 'message': 'You choose to stay!'}
   redirect '/game/dealer'
 end
 
 get '/game/dealer' do
+  session[:turn] = 'dealer'
   @show_hit_or_stay_controls = false
-  session[:dealer_total] = calculate_total(session[:dealer_cards])
-  if end_of_game?('Dealer', session[:dealer_total])
-    # dealer wins
-  elsif session[:dealer_total] >= 17
-    if session[:player_total] > session[:dealer_total]
-      @flash = { 'type': 'success', 'message': session[:player_name] +' won!'}
-    elsif session[:dealer_total] > session[:player_total]
-      @flash = { 'type': 'danger', 'message': 'Sorry ' + session[:player_name] + ' you lost, the dealer won!'}
+  if end_of_game?('Dealer', dealer_total)
+  elsif dealer_total >= 17
+    if player_total > dealer_total
+      winner!("#{session[:player_name]} won with a total of #{player_total}!")
+    elsif dealer_total > player_total
+      looser!("Dealer won with a total of #{dealer_total}!")
     else
-      @flash = { 'type': 'success', 'message': "It's a tie!"}
+      tie!("It was a tie! Both players scored #{player_total}.")
     end
   else
     @show_dealer_hit_control = true
@@ -153,8 +177,12 @@ get '/game/dealer' do
   erb :game
 end
 
-post '/dealer/hit' do
+post '/game/dealer/hit' do
   @show_hit_or_stay_controls = false
   deal_single_card('dealer')
   redirect '/game/dealer'
+end
+
+get '/game_over' do
+  erb :game_over
 end
