@@ -9,4 +9,4 @@ Built with Ruby, Bootstrap and Sinatra.
 
 ### Demo
 
-![alt text](https://github.com/joeainsworth/tl-blackjack-web-app/demo.gif "Demo of Ruby BlackJack")
+![alt text](https://github.com/joeainsworth/tl-blackjack-web-app/blob/master/demo.gif "Demo of Ruby BlackJack")
