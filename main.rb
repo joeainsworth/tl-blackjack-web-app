@@ -84,7 +84,7 @@ helpers do
 
   def end_of_game?(name, total)
     if total > BLACKJACK_VALUE
-      looser!("#{name} lost with a total of #{total}!")
+      looser!("#{name} busted with a total of #{total}!")
       @show_hit_or_stay_controls = false
       @play_again = true
     elsif total == BLACKJACK_VALUE
