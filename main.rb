@@ -30,6 +30,10 @@ helpers do
     end
   end
 
+  def deal_single_card(hand)
+    hand << session[:deck].shift
+  end
+
   def calculate_total(hand)
     total = 0
     face_values = hand.map { |card| card[1] }
@@ -57,9 +61,37 @@ helpers do
     calculate_total(session[:player_cards])
   end
 
-  def deal_single_card(option)
-    session[:dealer_cards] << session[:deck].shift if option == 'dealer'
-    session[:player_cards] << session[:deck].shift if option == 'player'
+  def busted?(total)
+    total > BLACKJACK_VALUE
+  end
+
+  def blackjack?(total)
+    total == BLACKJACK_VALUE
+  end
+
+  def end_of_game(name, total)
+    looser!("#{name} busted with a total of #{total}!") if busted?(total)
+    winner!("#{name} hit Blackjack!") if blackjack?(total)
+
+    if busted?(total) || blackjack?(total)
+      @show_hit_or_stay_controls = false
+      @play_again = true
+    end
+  end
+
+  def winner!(msg)
+    @flash = { type: 'success', message: msg }
+    @play_again = true
+  end
+
+  def looser!(msg)
+    @flash = { type: 'danger', message: msg }
+    @play_again = true
+  end
+
+  def tie!(msg)
+    @flash = { type: 'success', message: msg }
+    @play_again = true
   end
 
   def card_image(card)
@@ -78,35 +110,8 @@ helpers do
       else card[1]
     end
 
-    value = "#{suit}_#{value}"
-    "<img src='/images/cards/#{value}.jpg' class='card_image'>"
-  end
-
-  def end_of_game?(name, total)
-    if total > BLACKJACK_VALUE
-      looser!("#{name} busted with a total of #{total}!")
-      @show_hit_or_stay_controls = false
-      @play_again = true
-    elsif total == BLACKJACK_VALUE
-      winner!("#{name} hit Blackjack!")
-      @show_hit_or_stay_controls = false
-      @play_again = true
-    end
-  end
-
-  def winner!(msg)
-    @flash = { 'type': 'success', 'message': msg }
-    @play_again = true
-  end
-
-  def looser!(msg)
-    @flash = { 'type': 'danger', 'message': msg }
-    @play_again = true
-  end
-
-  def tie!(msg)
-    @flash = { 'type': 'success', 'message': msg }
-    @play_again = true
+    file_name = "#{suit}_#{value}"
+    "<img src='/images/cards/#{file_name}.jpg' class='card_image'>"
   end
 end
 
@@ -142,13 +147,13 @@ get '/game' do
   session[:turn] = 'player'
   shuffle_deck
   deal_cards
-  end_of_game?(session[:player_name], player_total)
+  end_of_game(session[:player_name], player_total)
   erb :game
 end
 
 post '/game/player/hit' do
-  deal_single_card('player')
-  end_of_game?(session[:player_name], player_total)
+  deal_single_card(session[:player_cards])
+  end_of_game(session[:player_name], player_total)
   erb :game
 end
 
@@ -161,7 +166,7 @@ end
 get '/game/dealer' do
   session[:turn] = 'dealer'
   @show_hit_or_stay_controls = false
-  if end_of_game?('Dealer', dealer_total)
+  if end_of_game('Dealer', dealer_total)
   elsif dealer_total >= 17
     if player_total > dealer_total
       winner!("#{session[:player_name]} won with a total of #{player_total}!")
@@ -179,7 +184,7 @@ end
 
 post '/game/dealer/hit' do
   @show_hit_or_stay_controls = false
-  deal_single_card('dealer')
+  deal_single_card(session[:dealer_cards])
   redirect '/game/dealer'
 end
 
