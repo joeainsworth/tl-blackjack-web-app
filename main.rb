@@ -61,19 +61,16 @@ helpers do
     calculate_total(session[:player_cards])
   end
 
-  def busted?(total)
-    total > BLACKJACK_VALUE
+  def busted?(name, total)
+    looser!("#{name} busted with a total of #{total}!") if total > BLACKJACK_VALUE
   end
 
-  def blackjack?(total)
-    total == BLACKJACK_VALUE
+  def blackjack?(name, total)
+    winner!("#{name} hit Blackjack!") if total == BLACKJACK_VALUE
   end
 
   def end_of_game(name, total)
-    looser!("#{name} busted with a total of #{total}!") if busted?(total)
-    winner!("#{name} hit Blackjack!") if blackjack?(total)
-
-    if busted?(total) || blackjack?(total)
+    if busted?(name, total) || blackjack?(name, total)
       @show_hit_or_stay_controls = false
       @play_again = true
     end
