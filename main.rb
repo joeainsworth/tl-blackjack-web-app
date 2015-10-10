@@ -163,8 +163,7 @@ end
 get '/game/dealer' do
   session[:turn] = 'dealer'
   @show_hit_or_stay_controls = false
-  if end_of_game('Dealer', dealer_total)
-  elsif dealer_total >= 17
+  if !end_of_game('Dealer', dealer_total) && dealer_total >= 17
     if player_total > dealer_total
       winner!("#{session[:player_name]} won with a total of #{player_total}!")
     elsif dealer_total > player_total
