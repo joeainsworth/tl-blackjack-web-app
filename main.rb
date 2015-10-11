@@ -11,6 +11,7 @@ helpers do
   CARDS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
   BLACKJACK_VALUE  = 21
   DEALER_MIN_VALUE = 17
+  INITIAL_BALANCE  = 500
 
   def new_player?
     !session[:player_name]
@@ -61,16 +62,37 @@ helpers do
     calculate_total(session[:player_cards])
   end
 
-  def busted?(name, total)
-    looser!("#{name} busted with a total of #{total}!") if total > BLACKJACK_VALUE
+  def adjust_balance(operator)
+    case operator
+    when '+'
+      session[:player_balance] += session[:player_bet]
+    when '-'
+      session[:player_balance] -= session[:player_bet]
+    end
   end
 
-  def blackjack?(name, total)
-    winner!("#{name} hit Blackjack!") if total == BLACKJACK_VALUE
+  def busted(name, total)
+    if name == 'Dealer' && total > BLACKJACK_VALUE
+      adjust_balance('+')
+      winner!("#{name} busted with a total of #{total}. You now have a balance of &pound;#{session[:player_balance]}")
+    elsif name == session[:player_name] && total > BLACKJACK_VALUE
+      adjust_balance('-')
+      looser!("#{name} busted with a total of #{total}. You now have a balance of &pound;#{session[:player_balance]}")
+    end
+  end
+
+  def blackjack(name, total)
+    if name == 'Dealer' && total == BLACKJACK_VALUE
+      adjust_balance('-')
+      looser!("#{name} hit Blackjack. You now have a balance of &pound;#{session[:player_balance]}")
+    elsif name == session[:player_name] && total == BLACKJACK_VALUE
+      adjust_balance('+')
+      winner!("#{name} hit Blackjack and now has a balance of &pound;#{session[:player_balance]}")
+    end
   end
 
   def end_of_game(name, total)
-    if busted?(name, total) || blackjack?(name, total)
+    if busted(name, total) || blackjack(name, total)
       @show_hit_or_stay_controls = false
       @play_again = true
     end
@@ -136,6 +158,21 @@ post '/new_player' do
     halt erb(:new_player)
   end
   session[:player_name] = params[:player_name].capitalize
+  session[:player_balance] = INITIAL_BALANCE
+  redirect '/bet'
+end
+
+get '/bet' do
+  redirect '/game_over' if session[:player_balance] <= 0
+  erb :bet
+end
+
+post '/bet' do
+  if params['player_bet'].empty?
+    @flash = { type: 'danger', message: 'Please place a bet' }
+    halt erb(:bet)
+  end
+  session[:player_bet] = params[:player_bet].to_i
   redirect '/game'
 end
 
@@ -165,9 +202,11 @@ get '/game/dealer' do
   @show_hit_or_stay_controls = false
   if !end_of_game('Dealer', dealer_total) && dealer_total >= 17
     if player_total > dealer_total
-      winner!("#{session[:player_name]} won with a total of #{player_total}!")
+      adjust_balance('+')
+      winner!("#{session[:player_name]} won with a total of #{player_total} and now has a balance of &pound;#{session[:player_balance]}")
     elsif dealer_total > player_total
-      looser!("Dealer won with a total of #{dealer_total}!")
+      adjust_balance('-')
+      looser!("Dealer won with a total of #{dealer_total}! You now have a balance of &pound;#{session[:player_balance]}")
     else
       tie!("It was a tie! Both players scored #{player_total}.")
     end

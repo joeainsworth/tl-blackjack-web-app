@@ -1,7 +1,17 @@
+<% if session[:player_balance] > 0 %>
 <h3>Thanks for playing!</h3>
-
 <div class="row">
   <div class="col-md-4">
-    <p>Maybe it's time to hit up Vegas? <a href="/new_player">start over</a></p>
+    <p>You amassed a fortune of <% session[:player_balance] %> it's time to hit up Vegas? <a href="/new_player">start over</a></p>
   </div>
 </div>
+<% end %>
+
+<% if session[:player_balance] <= 0 %>
+<h3>Sorry, you're broke!</h3>
+<div class="row">
+  <div class="col-md-4">
+    <p>Time to mortgage the house or <a href="/new_player">start over</a></p>
+  </div>
+</div>
+<% end %>

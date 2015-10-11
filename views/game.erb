@@ -2,6 +2,10 @@
 <div class="panel panel-default">
   <div class="panel-body">
     What would you like to do <%= session[:player_name] %>?
+    <small>
+    You have a balance of &pound;<%= session[:player_balance] %> and a bet of
+    &pound;<%= session[:player_bet] %> on this round.
+    </small>
     <div class="btn-group">
       <form action='/game/player/hit' method='post'>
         <button name"hit" type="submit" class="btn btn-success">
@@ -24,7 +28,7 @@
 <div class="panel panel-default">
   <div class="panel-body">
       <strong>Play again?</strong>
-      <a href="/game" class="btn btn-primary">Yes</a>
+      <a href="/bet" class="btn btn-primary">Yes</a>
       <a href="/game_over" class="btn btn-danger">No</a>
   </div>
 </div>
