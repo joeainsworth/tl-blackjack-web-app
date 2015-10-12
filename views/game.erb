@@ -1,67 +1,75 @@
-<% if @show_hit_or_stay_controls %>
-<div class="panel panel-default">
-  <div class="panel-body">
-    What would you like to do <%= session[:player_name] %>?
-    <small>
-    You have a balance of &pound;<%= session[:player_balance] %> and a bet of
-    &pound;<%= session[:player_bet] %> on this round.
-    </small>
-    <div class="btn-group">
-      <form action='/game/player/hit' method='post'>
-        <button name"hit" type="submit" class="btn btn-success">
-          Hit
-        </button>
-      </form>
+<div id="game">
+  <% if @flash[:message] %>
+    <div class="alert alert-<%= @flash[:type] %>" role="alert">
+      <%= @flash[:message] %>
     </div>
-    <div class="btn-group">
-      <form action='/game/player/stay' method='post'>
-        <button name="stay" type="submit" class="btn btn-info">
-          Stay
-        </button>
-      </form>
+  <% end %>
+
+  <% if @show_hit_or_stay_controls %>
+  <div class="panel panel-default">
+    <div class="panel-body">
+      What would you like to do <%= session[:player_name] %>?
+      <small>
+      You have a balance of &pound;<%= session[:player_balance] %> and a bet of
+      &pound;<%= session[:player_bet] %> on this round.
+      </small>
+      <div class="btn-group">
+        <form id="hit_form" action='/game/player/hit' method='post'>
+          <button name="hit" id="hit" type="submit" class="btn btn-success">
+            Hit
+          </button>
+        </form>
+      </div>
+      <div class="btn-group">
+        <form id="stay_form" action='/game/player/stay' method='post'>
+          <button name="stay" id="stay" type="submit" class="btn btn-info">
+            Stay
+          </button>
+        </form>
+      </div>
     </div>
   </div>
-</div>
-<% end %>
+  <% end %>
 
-<% if @play_again %>
-<div class="panel panel-default">
-  <div class="panel-body">
-      <strong>Play again?</strong>
-      <a href="/bet" class="btn btn-primary">Yes</a>
-      <a href="/game_over" class="btn btn-danger">No</a>
+  <% if @play_again %>
+  <div class="panel panel-default">
+    <div class="panel-body">
+        <strong>Play again?</strong>
+        <a href="/bet" class="btn btn-primary">Yes</a>
+        <a href="/game_over" class="btn btn-danger">No</a>
+    </div>
   </div>
-</div>
-<% end %>
+  <% end %>
 
-<p>Dealers cards are:</p>
-<div class="well">
-  <ul class="list-inline">
-  <% session[:dealer_cards].each_with_index do |card, i| %>
-    <% if session[:turn] != "dealer" && i == 0 %>
-      <img src='/images/cards/cover.jpg' class='card_image'>
-    <% else %>
-    <li><%= card_image(card) %></li>
+  <p>Dealers cards are:</p>
+  <div class="well">
+    <ul class="list-inline">
+    <% session[:dealer_cards].each_with_index do |card, i| %>
+      <% if session[:turn] != "dealer" && i == 0 %>
+        <img src='/images/cards/cover.jpg' class='card_image'>
+      <% else %>
+      <li><%= card_image(card) %></li>
+      <% end %>
     <% end %>
-  <% end %>
-  </ul>
-  <% if @show_dealer_hit_control %>
-    <p>Dealer has <%= dealer_total %> and will hit
-    <form action='/game/dealer/hit' method='post'>
-      <button name"hit" type="submit" class="btn btn-primary">
-        Show next card
-      </button>
-    </form>
-    </p>
-  <% end %>
-</div>
+    </ul>
+    <% if @show_dealer_hit_control %>
+      <p>Dealer has <%= dealer_total %> and will hit
+      <form id="dealer_form" action='/game/dealer/hit' method='post'>
+        <button name"hit" type="submit" class="btn btn-primary">
+          Show next card
+        </button>
+      </form>
+      </p>
+    <% end %>
+  </div>
 
-<p><%= session[:player_name] %>'s cards are:</p>
-<div class="well">
-  <ul class="list-inline">
-  <% session[:player_cards].each do |card| %>
-    <li><%= card_image(card) %></li>
-  <% end %>
-  </ul>
-  Total of cards: <%= player_total %>
+  <p><%= session[:player_name] %>'s cards are:</p>
+  <div class="well">
+    <ul class="list-inline">
+    <% session[:player_cards].each do |card| %>
+      <li><%= card_image(card) %></li>
+    <% end %>
+    </ul>
+    Total of cards: <%= player_total %>
+  </div>
 </div>

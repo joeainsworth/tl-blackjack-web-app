@@ -128,6 +128,7 @@ end
 
 before do
   @flash = {}
+  @validation = {}
   @play_again = false
   @show_hit_or_stay_controls = true
 end
@@ -146,7 +147,7 @@ end
 
 post '/new_player' do
   if params[:player_name].empty?
-    @flash = { type: 'danger', message: 'Name is required' }
+    @validation = { type: 'danger', message: 'Name is required' }
     halt erb(:new_player)
   end
   session[:player_name] = params[:player_name].capitalize
@@ -161,10 +162,10 @@ end
 
 post '/bet' do
   if params['player_bet'].empty?
-    @flash = { type: 'danger', message: 'Please place a bet' }
+    @validation = { type: 'danger', message: 'Please place a bet' }
     halt erb(:bet)
   elsif params['player_bet'].to_i > session[:player_balance]
-    @flash = { type: 'danger', message: 'You cannot bet more than your balance' }
+    @validation = { type: 'danger', message: 'You cannot bet more than your balance' }
     halt erb(:bet)
   end
   session[:player_bet] = params[:player_bet].to_i
@@ -183,7 +184,7 @@ end
 post '/game/player/hit' do
   deal_single_card(session[:player_cards])
   end_of_game
-  erb :game
+  erb :game, layout: false
 end
 
 post '/game/player/stay' do
@@ -212,7 +213,7 @@ get '/game/dealer' do
     @show_dealer_hit_control = true
   end
 
-  erb :game
+  erb :game, layout: false
 end
 
 post '/game/dealer/hit' do
