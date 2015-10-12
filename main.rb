@@ -71,45 +71,37 @@ helpers do
     end
   end
 
-  def busted(name, total)
-    if name == 'Dealer' && total > BLACKJACK_VALUE
-      adjust_balance('+')
-      winner!("#{name} busted with a total of #{total}. You now have a balance of &pound;#{session[:player_balance]}")
-    elsif name == session[:player_name] && total > BLACKJACK_VALUE
-      adjust_balance('-')
-      looser!("#{name} busted with a total of #{total}. You now have a balance of &pound;#{session[:player_balance]}")
-    end
+  def busted?
+    player_total > BLACKJACK_VALUE
   end
 
-  def blackjack(name, total)
-    if name == 'Dealer' && total == BLACKJACK_VALUE
-      adjust_balance('-')
-      looser!("#{name} hit Blackjack. You now have a balance of &pound;#{session[:player_balance]}")
-    elsif name == session[:player_name] && total == BLACKJACK_VALUE
-      adjust_balance('+')
-      winner!("#{name} hit Blackjack and now has a balance of &pound;#{session[:player_balance]}")
-    end
+  def blackjack?
+    player_total == BLACKJACK_VALUE
   end
 
-  def end_of_game(name, total)
-    if busted(name, total) || blackjack(name, total)
+  def end_of_game
+    winner!("#{session[:player_name]} got Blackjack") if blackjack?
+    looser!("#{session[:player_name]} busted with a total of #{player_total}") if busted?
+    if busted? || blackjack?
       @show_hit_or_stay_controls = false
       @play_again = true
     end
   end
 
   def winner!(msg)
-    @flash = { type: 'success', message: msg }
+    adjust_balance('+')
+    @flash = { type: 'success', message: "#{msg}. Your balance is now &pound;#{session[:player_balance]}." }
     @play_again = true
   end
 
   def looser!(msg)
-    @flash = { type: 'danger', message: msg }
+    adjust_balance('-')
+    @flash = { type: 'danger', message: "#{msg}. Your balance is now &pound;#{session[:player_balance]}." }
     @play_again = true
   end
 
   def tie!(msg)
-    @flash = { type: 'success', message: msg }
+    @flash = { type: 'success', message: "#{msg}. Your balance is still &pound;#{session[:player_balance]}." }
     @play_again = true
   end
 
@@ -171,6 +163,9 @@ post '/bet' do
   if params['player_bet'].empty?
     @flash = { type: 'danger', message: 'Please place a bet' }
     halt erb(:bet)
+  elsif params['player_bet'].to_i > session[:player_balance]
+    @flash = { type: 'danger', message: 'You cannot bet more than your balance' }
+    halt erb(:bet)
   end
   session[:player_bet] = params[:player_bet].to_i
   redirect '/game'
@@ -181,13 +176,13 @@ get '/game' do
   session[:turn] = 'player'
   shuffle_deck
   deal_cards
-  end_of_game(session[:player_name], player_total)
+  end_of_game
   erb :game
 end
 
 post '/game/player/hit' do
   deal_single_card(session[:player_cards])
-  end_of_game(session[:player_name], player_total)
+  end_of_game
   erb :game
 end
 
@@ -200,16 +195,19 @@ end
 get '/game/dealer' do
   session[:turn] = 'dealer'
   @show_hit_or_stay_controls = false
-  if !end_of_game('Dealer', dealer_total) && dealer_total >= 17
-    if player_total > dealer_total
-      adjust_balance('+')
-      winner!("#{session[:player_name]} won with a total of #{player_total} and now has a balance of &pound;#{session[:player_balance]}")
-    elsif dealer_total > player_total
-      adjust_balance('-')
-      looser!("Dealer won with a total of #{dealer_total}! You now have a balance of &pound;#{session[:player_balance]}")
-    else
-      tie!("It was a tie! Both players scored #{player_total}.")
-    end
+
+  if dealer_total == BLACKJACK_VALUE
+    looser!("Dealer hit Blackjack")
+  elsif dealer_total > BLACKJACK_VALUE
+    winner!("Dealer busted with a total of #{dealer_total}")
+  elsif dealer_total >= 17
+      if player_total > dealer_total
+        winner!("#{session[:player_name]} with a total of #{player_total} vs the Dealer with a total of #{dealer_total}")
+      elsif dealer_total > player_total
+        looser!("Dealer won with a total of #{dealer_total} vs #{session[:player_name]} with total of #{player_total}")
+      else
+        tie!("The game was a tie both players scored #{player_total}")
+      end
   else
     @show_dealer_hit_control = true
   end
@@ -222,6 +220,7 @@ post '/game/dealer/hit' do
   deal_single_card(session[:dealer_cards])
   redirect '/game/dealer'
 end
+
 
 get '/game_over' do
   erb :game_over
