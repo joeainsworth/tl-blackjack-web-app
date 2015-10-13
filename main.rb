@@ -189,7 +189,7 @@ end
 
 post '/game/player/stay' do
   @show_hit_or_stay_controls = false
-  @flash = { 'type': 'success', 'message': 'You choose to stay!'}
+  @flash = { type: 'success', message: 'You choose to stay!'}
   redirect '/game/dealer'
 end
 
